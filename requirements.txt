@@ -1,0 +1,16 @@
+# Linting & Pipeline Validation
+flake8
+dvc[s3]
+feast
+mlflow
+kfp
+
+# API, serving and data parsing
+fastapi
+uvicorn
+pydantic
+scikit-learn
+pandas
+numpy
+pyarrow
+fastparquet
