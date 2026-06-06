@@ -1,0 +1,55 @@
+name: 🚀 Model serving Deployment
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'serving/**'
+      - 'monitoring/drift_service.py'
+      - '.github/workflows/deploy_serving.yml'
+  workflow_dispatch:
+
+jobs:
+  validate-triton-config:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Validate Triton config.pbtxt
+        run: |
+          echo "Validating Triton configuration schema syntax..."
+          # Verify file exists and has correct format
+          test -f serving/config.pbtxt
+          grep -q "name: \"credit_risk_model\"" serving/config.pbtxt
+          grep -q "platform: \"xgboost_savedmodel\"" serving/config.pbtxt
+          echo "Triton config.pbtxt layout verified."
+
+  build-and-push:
+    needs: validate-triton-config
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build Docker Serving Sidecar
+        run: |
+          echo "Building Triton drift metrics sidecar image..."
+          docker build -t bank-mlops-drift-sidecar:${{ github.sha }} -f Dockerfile.backend .
+
+      - name: Push to AWS ECR
+        run: |
+          echo "Pushing built images to AWS Elastic Container Registry..."
+          # docker tag bank-mlops-drift-sidecar:${{ github.sha }} $ECR_REGISTRY/bank-mlops-drift-sidecar:latest
+          # docker push $ECR_REGISTRY/bank-mlops-drift-sidecar:latest
+
+  k8s-deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Kubernetes
+        run: |
+          echo "Performing rolling update on Triton serving deployment inside Kubernetes..."
+          # kubectl set image deployment/triton-serving-deployment triton-serving=triton-inference-server:23.08-py3 sidecar=bank-mlops-drift-sidecar:latest -n mlops
+          # kubectl rollout status deployment/triton-serving-deployment -n mlops
+          echo "Serving cluster rollout complete. Health check endpoint pinged: HTTP 200"

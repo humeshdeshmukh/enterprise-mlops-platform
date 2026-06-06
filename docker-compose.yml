@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8000:8000"
+    networks:
+      - mlops-net
+    environment:
+      - MLFLOW_TRACKING_URI=http://localhost:8000/api/mlflow
+    restart: always
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:3000"
+    networks:
+      - mlops-net
+    depends_on:
+      - backend
+    restart: always
+
+networks:
+  mlops-net:
+    driver: bridge

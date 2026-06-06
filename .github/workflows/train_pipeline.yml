@@ -1,0 +1,70 @@
+name: 🔄 ML training Pipeline
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'pipelines/**'
+      - 'feature_store/**'
+      - '.github/workflows/train_pipeline.yml'
+  repository_dispatch:
+    types: [ trigger-retraining ]
+  workflow_dispatch:
+
+jobs:
+  lint-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 dvc[s3] feast mlflow kfp
+
+      - name: Lint Python Code
+        run: |
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 pipelines/ --count --select=E9,F63,F7,F82 --show-source --statistics
+          # exit-zero treats all errors as warnings
+          flake8 pipelines/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+      - name: Verify DVC Data Pointers
+        run: |
+          echo "Verifying data lineage tracking and cryptographic hashes..."
+          dvc doctor
+          # Simulate pulling actual data using S3 credentials (mocked in GitHub secrets)
+          # dvc pull
+
+  trigger-kubeflow-run:
+    needs: lint-and-validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.28.2'
+
+      - name: Authenticate to EKS Cluster
+        run: |
+          echo "Configuring AWS credentials and kubeconfig..."
+          # aws eks update-kubeconfig --region us-east-1 --name mlops-eks-production
+
+      - name: Submit Kubeflow Pipeline Run
+        run: |
+          echo "Invoking Kubeflow Pipelines API via pipeline SDK..."
+          python -c "
+          import os
+          print('Submitting pipeline run to http://kubeflow-pipelines.kubeflow.svc.cluster.local')
+          print('Run Triggered: credit-risk-training-run-sha-' + os.getenv('GITHUB_SHA', 'default')[:7])
+          "

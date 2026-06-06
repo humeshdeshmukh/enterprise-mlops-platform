@@ -1,0 +1,45 @@
+# ==============================================================================
+# Enterprise MLOps Platform - Git Ignore Rules
+# ==============================================================================
+
+# Python Bytecode & Cache files
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+ENV/
+
+# Node / Vite Frontend Artifacts
+node_modules/
+dist/
+dist-ssr/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Feast Feature Store local registries & caches
+.feast/
+feature_store/data/*.parquet
+!feature_store/data/.gitkeep
+
+# Compiled Kubeflow Pipeline Packages
+*.yaml
+!pipelines/shipyard.yaml
+!keptn/shipyard.yaml
+
+# Terraform state & cache files
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+*.vars.tf
+
+# Log files
+*.log
+logs/
+monitoring/*.log

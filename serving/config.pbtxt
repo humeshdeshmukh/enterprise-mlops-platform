@@ -1,0 +1,58 @@
+name: "credit_risk_model"
+platform: "xgboost_savedmodel"
+max_batch_size: 64
+
+input [
+  {
+    name: "credit_score"
+    data_type: TYPE_FP32
+    dims: [ 1 ]
+  },
+  {
+    name: "debt_to_income_ratio"
+    data_type: TYPE_FP32
+    dims: [ 1 ]
+  },
+  {
+    name: "annual_income"
+    data_type: TYPE_FP32
+    dims: [ 1 ]
+  },
+  {
+    name: "active_loans_count"
+    data_type: TYPE_FP32
+    dims: [ 1 ]
+  },
+  {
+    name: "repayment_history_score"
+    data_type: TYPE_FP32
+    dims: [ 1 ]
+  }
+]
+
+output [
+  {
+    name: "risk_probability"
+    data_type: TYPE_FP32
+    dims: [ 1 ]
+  },
+  {
+    name: "risk_decision"
+    data_type: TYPE_INT32
+    dims: [ 1 ]
+  }
+]
+
+# Optimize serving performance using Dynamic Batching
+dynamic_batching {
+  max_queue_delay_microseconds: 5000  # 5ms delay to bundle concurrent requests
+  preferred_batch_size: [ 8, 16, 32 ]
+}
+
+# Run execution on GPU (instance type g4dn.xlarge in Terraform)
+instance_group [
+  {
+    count: 1
+    kind: KIND_GPU
+  }
+]
